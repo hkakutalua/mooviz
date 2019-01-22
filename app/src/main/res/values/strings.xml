@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Mooviz</string>
+    <string name="refresh">Actualizar</string>
+    <string name="title_movie_details">Detalhes do Filme</string>
+</resources>
