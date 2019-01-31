@@ -1,37 +1,29 @@
 package com.buka.mooviz;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.buka.mooviz.api.TmdbApi;
 import com.buka.mooviz.models.Movie;
-import com.buka.mooviz.models.Page;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class MainActivity extends AppCompatActivity implements MoviesAdapter.OnItemClickedListener {
     private ProgressBar loadingProgressBar;
     private RecyclerView moviesRecyclerView;
     private MoviesAdapter moviesAdapter;
-    private TmdbApi tmdbApi;
+    private MainViewModel mainViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,15 +39,17 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.OnI
         moviesAdapter = new MoviesAdapter(this);
         moviesRecyclerView.setAdapter(moviesAdapter);
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.themoviedb.org/3/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+        mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        mainViewModel.getPopularMoviesLiveData().observe(this, new Observer<ArrayList<Movie>>() {
+            @Override
+            public void onChanged(ArrayList<Movie> movies) {
+                moviesAdapter.setMovies(movies);
+                loadingProgressBar.setVisibility(View.INVISIBLE);
+            }
+        });
 
-        tmdbApi = retrofit.create(TmdbApi.class);
-
-        MoviesRequestTask moviesRequestTask = new MoviesRequestTask();
-        moviesRequestTask.execute();
+        loadingProgressBar.setVisibility(View.VISIBLE);
+        mainViewModel.fetchPopularMovies();
     }
 
     @Override
@@ -69,8 +63,8 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.OnI
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_refresh) {
-            MoviesRequestTask moviesRequestTask = new MoviesRequestTask();
-            moviesRequestTask.execute();
+            mainViewModel.fetchPopularMovies();
+            loadingProgressBar.setVisibility(View.VISIBLE);
             return true;
         }
 
@@ -86,45 +80,5 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.OnI
         intent.putExtra(MovieDetailsActivity.EXTRA_MOVIE_RELEASE_DATE, movie.getReleaseDate());
 
         startActivity(intent);
-    }
-
-    class MoviesRequestTask extends AsyncTask<Void, Void, ArrayList<Movie>> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            loadingProgressBar.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected ArrayList<Movie> doInBackground(Void... voids) {
-            try {
-                Response<Page> response = tmdbApi.getPopularMovies().execute();
-
-                if (response.isSuccessful()) {
-                    Page page = response.body();
-                    ArrayList<Movie> movies = page.getResults();
-                    return movies;
-                } else {
-                    Log.e(MoviesRequestTask.class.getSimpleName(), response.message());
-                    return null;
-                }
-            } catch (IOException exception) {
-                Log.e(MoviesRequestTask.class.getSimpleName(), exception.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<Movie> movies) {
-            super.onPostExecute(movies);
-
-            loadingProgressBar.setVisibility(View.INVISIBLE);
-
-            if (movies != null) {
-                moviesAdapter.setMovies(movies);
-            } else {
-                Toast.makeText(MainActivity.this, "Ocorreu algum erro!", Toast.LENGTH_LONG).show();
-            }
-        }
     }
 }
