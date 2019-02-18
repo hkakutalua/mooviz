@@ -9,12 +9,13 @@ import android.widget.Toast;
 import com.buka.mooviz.models.Movie;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewHolder> {
-    private ArrayList<Movie> movies = new ArrayList<>();
+    private List<Movie> movies = new ArrayList<>();
     private OnItemClickedListener listener;
 
     public MoviesAdapter(OnItemClickedListener listener) {
@@ -42,7 +43,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
         return movies.size();
     }
 
-    public void setMovies(ArrayList<Movie> movies) {
+    public void setMovies(List<Movie> movies) {
         if (movies != null) {
             this.movies = movies;
             notifyDataSetChanged();
